@@ -79,7 +79,7 @@ function displayRecords(list = records) {
         <tr class="${statusClass}"> 
             <td>${r.date}</td>
             <td>${r.time}</td>
-            <td>${r.glucose}</td>
+            <td>${r.category || '-'}</td> <td>${r.glucose}</td>
             <td class="${r.medication ? 'med-yes' : 'med-no'}">
                 ${r.medication ? "✔ 有" : "✘ 無"}
             </td>
@@ -287,13 +287,15 @@ form.addEventListener("submit", e => {
     const time = document.getElementById("time").value;
     const glucose = Number(document.getElementById("glucose").value);
     const medication = document.getElementById("medication").checked;
+    const category = document.getElementById("category").value;
 
     const newRecord = {
         id: Date.now(),
         date,
         time,
         glucose,
-        medication
+        medication,
+        category
     };
 
     records.push(newRecord);
