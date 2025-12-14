@@ -1,0 +1,10 @@
+# 忽略 Node.js 依賴資料夾和鎖定檔案
+node_modules/
+package-lock.json
+
+# 忽略環境變數檔案
+.env
+
+# 忽略作業系統產生的檔案
+.DS_Store
+Thumbs.db
