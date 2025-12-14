@@ -64,7 +64,7 @@ function displayRecords(list = records) {
         if (currentMonth !== lastMonth) {
             const monthRow = `
                 <tr>
-                    <td colspan="5" style="background-color: var(--low-bg); font-weight: bold; text-align: center; color: var(--text-color); border-bottom: none;">
+                    <td colspan="6" style="background-color: var(--low-bg); font-weight: bold; text-align: center; color: var(--text-color); border-bottom: none;">
                         --- ${currentMonth} 月份紀錄 ---
                     </td>
                 </tr>
@@ -76,11 +76,12 @@ function displayRecords(list = records) {
         const statusClass = getStatusClass(r.glucose); 
         // 假設您在 table 結構沒有變動 (日期, 時間, 血糖值, 降血糖藥, 操作)
         
-        const row = `
+       const row = `
         <tr class="${statusClass}"> 
             <td>${r.date}</td>
             <td>${r.time}</td>
-            <td>${r.category || '-'}</td> <td>${r.glucose}</td>
+            <td>${r.category || '-'}</td>
+            <td>${r.glucose}</td>
             <td class="${r.medication ? 'med-yes' : 'med-no'}">
                 ${r.medication ? "✔ 有" : "✘ 無"}
             </td>
