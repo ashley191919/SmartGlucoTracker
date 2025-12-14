@@ -5,95 +5,258 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>血糖紀錄系統</title>
 
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+
 
     <style>
-        body {
-            font-family: Arial;
-            margin: 20px;
+        :root {
+            /* 主題色 */
+            --primary-color: #007bff; /* 藍色 */
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.15);
+            /* 狀態色 */
+            --high-color: #dc3545; /* 紅 */
+            --low-color: #007bff;  /* 藍 */
+            --normal-color: #28a745; /* 綠 */
+            --high-bg: #ffe3e3;
+            --low-bg: #e3f0ff;
+            --normal-bg: #e3ffe3;
         }
 
-        form {
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 內容容器：模擬App的居中和最大寬度 */
+        #app-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 0 10px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+            margin-top: 30px;
             margin-bottom: 20px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
+        /* 卡片樣式 */
+        .card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            margin-bottom: 25px;
         }
 
+        /* 表單佈局 */
+        form {
+            display: grid;
+            gap: 15px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        input[type="date"], input[type="time"], input[type="number"], select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        
+        /* 按鈕樣式 */
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-light);
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* 表格樣式 */
+        table {
+            border-radius: 12px;
+            overflow: hidden; /* 確保圓角生效 */
+            box-shadow: var(--shadow-light);
+            margin-top: 0;
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 10px;
+            font-weight: bold;
+        }
+        td {
+            padding: 10px;
+            border: none;
+            border-bottom: 1px solid #f0f0f0;
+            background-color: var(--card-background);
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* 篩選器樣式 */
+        #filterContainer {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* AI 建議區塊 */
+        #aiResult {
+            background-color: var(--low-bg);
+            padding: 15px;
+            border-left: 5px solid var(--low-color);
+            border-radius: 8px;
+            line-height: 1.6;
+            white-space: pre-wrap; /* 保持清單格式 */
+        }
+        
+        /* 狀態顏色 (功能 A) */
+        .glucose-high { 
+            background-color: var(--high-bg); 
+            font-weight: bold;
+            color: var(--high-color);
+        } 
+        .glucose-low { 
+            background-color: var(--low-bg); 
+            color: var(--low-color);
+        } 
+        .glucose-normal { 
+            background-color: var(--normal-bg); 
+            color: var(--normal-color);
+        } 
+
         .med-yes {
-            color: green;
+            color: var(--normal-color);
             font-weight: bold;
         }
         .med-no {
-            color: gray;
+            color: #6c757d;
         }
     </style>
-</head>
+    </head>
+<body>
+    <div id="app-container"> 
+        <h1>血糖紀錄系統</h1>
+
+        <div class="card">
+            <h2>新增紀錄</h2>
+            </div>
+
+        <div class="card">
+            <h2>紀錄列表</h2>
+            </div>
+        
+        <div class="card">
+            <h2>AI 血糖健康建議</h2>
+            </div>
+
+    </div> </body>
+</html>
 <body>
 
-    <h1>血糖紀錄系統</h1>
+    <div id="app-container"> 
 
-    <form id="glucoseForm">
-        <label>日期：</label>
-        <input type="date" id="date" required><br><br>
+        <h1>血糖紀錄系統</h1>
 
-        <label>時間：</label>
-        <input type="time" id="time" required><br><br>
-
-        <label>血糖值 (mg/dL)：</label>
-        <input type="number" id="glucose" required><br><br>
-
-        <label>
-            <input type="checkbox" id="medication">
-            是否有吃降血糖藥
-        </label><br><br>
-
-        <button type="submit">新增紀錄</button>
-    </form>
-
-    <h2>紀錄列表</h2>
-
-    <div id="filterContainer">
-        <label for="filterSelect">血糖狀態篩選：</label>
-        <select id="filterSelect">
-            <option value="all">全部</option>
-            <option value="high">高血糖</option>
-            <option value="normal">正常</option>
-            <option value="low">低血糖</option>
-        </select>
-    </div>
-    <br> <table>
-        <thead>
-            <tr>
-                <th>日期</th>
-                <th>時間</th>
-                <th>血糖值</th>
-                <th>降血糖藥</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="recordTableBody">
-        </tbody>
-    </table>
-
-    <h2>血糖趨勢圖</h2>
-    <canvas id="glucoseChart" width="400" height="200"></canvas>
-
-    <h2>AI 血糖健康建議</h2>
-    <button onclick="getAIAdvice()">產生 AI 建議</button>
-    <p id="aiResult">尚未產生建議</p>
-
-<script src="script.js"></script>
+        <div class="card">
+            <h2>新增紀錄</h2>
+            <form id="glucoseForm">
+                <label>日期：
+                    <input type="date" id="date" required>
+                </label>
+                <label>時間：
+                    <input type="time" id="time" required>
+                </label>
+                <label>血糖值 (mg/dL)：
+                    <input type="number" id="glucose" required>
+                </label>
+                <label>
+                    <input type="checkbox" id="medication">
+                    是否有吃降血糖藥
+                </label>
+                <button type="submit">新增紀錄</button>
+            </form>
+        </div>
 
 
+        <div class="card">
+            <h2>紀錄列表</h2>
+            <div id="filterContainer">
+                <label for="filterSelect">血糖狀態篩選：</label>
+                <select id="filterSelect">
+                    <option value="all">全部</option>
+                    <option value="high">高血糖</option>
+                    <option value="normal">正常</option>
+                    <option value="low">低血糖</option>
+                </select>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>時間</th>
+                        <th>血糖值</th>
+                        <th>降血糖藥</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="recordTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>血糖趨勢圖</h2>
+            <canvas id="glucoseChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>AI 血糖健康建議</h2>
+            <button onclick="getAIAdvice()">產生 AI 建議</button>
+            <p id="aiResult">尚未產生建議</p>
+        </div>
+
+    </div> <script src="script.js"></script>
 </body>
 </html>
