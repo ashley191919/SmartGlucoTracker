@@ -310,7 +310,7 @@ form.addEventListener("submit", e => {
     localStorage.setItem("glucoseRecords", JSON.stringify(records));
 
     currentPage = 1; // ⭐ 新增紀錄後回到第一頁 ⭐
-    displayRecords(); // 不帶參數，顯示全部資料的第一頁
+    displayRecords(getFilteredRecords());
     updateChart();
     form.reset();
 });
