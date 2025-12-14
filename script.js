@@ -217,7 +217,13 @@ async function getAIAdvice() {
         if (data.error) {
             resultArea.innerText = `AI 服務錯誤：${data.error}`;
         } else {
-            resultArea.innerText = data.result;
+            let rawText = data.result;
+            
+            // 將 ** 和 * 替換成空字串
+            // g 標記表示全域替換 (Global)
+            rawText = rawText.replace(/\*\*/g, '').replace(/\*/g, '');
+            
+            resultArea.innerText = rawText; // 顯示已淨化的文字
         }
         
     } catch (error) {
