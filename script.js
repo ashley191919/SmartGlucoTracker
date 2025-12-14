@@ -33,14 +33,14 @@ const filterSelect = document.getElementById("filterSelect");
 function getStatusClass(glucose) {
     if (glucose > 140) return 'glucose-high';
     if (glucose < 70) return 'glucose-low';
-    return 'glucose-normal';
+    return 'normal-color'; // 這裡應該返回 CSS class 名稱
 }
 
 // ======= 顯示表格 (整合功能 A：表格上色 + 分頁/排序/月份提示) =======
 function displayRecords(list = records) {
     tableBody.innerHTML = "";
 
-    // 1. ⭐ 排序：以日期時間降序排列 (最新在前) ⭐
+    // 1. 排序
     const sortedList = [...list].sort(
         (a, b) => new Date(b.date + " " + b.time) - new Date(a.date + " " + a.time)
     );
@@ -49,7 +49,6 @@ function displayRecords(list = records) {
     const totalRecords = sortedList.length;
     const totalPages = Math.ceil(totalRecords / recordsPerPage);
     
-    // 確保當前頁碼在有效範圍內
     if (currentPage > totalPages && totalPages > 0) {
         currentPage = totalPages;
     } else if (totalPages === 0) {
@@ -62,11 +61,10 @@ function displayRecords(list = records) {
     const currentRecords = sortedList.slice(startIndex, endIndex);
 
     // 4. 渲染表格
-    let lastMonth = ""; // 用於追蹤月份，實現大分頁提示
+    let lastMonth = ""; 
 
     currentRecords.forEach(r => {
-        // ⭐ 大分頁提示：檢查是否換月 ⭐
-        const currentMonth = r.date.substring(0, 7); // 格式如 YYYY-MM
+        const currentMonth = r.date.substring(0, 7); 
         if (currentMonth !== lastMonth) {
             const monthRow = `
                 <tr>
@@ -74,14 +72,14 @@ function displayRecords(list = records) {
                         --- ${currentMonth} 月份紀錄 ---
                     </td>
                 </tr>
-            `; // ⭐ 還原為 colspan="5" ⭐
+            `;
             tableBody.innerHTML += monthRow;
             lastMonth = currentMonth;
         }
 
         const statusClass = getStatusClass(r.glucose); 
         
-       const row = `
+        const row = `
         <tr class="${statusClass}"> 
             <td>${r.date}</td>
             <td>${r.time}</td>
@@ -93,12 +91,12 @@ function displayRecords(list = records) {
                 <button onclick="deleteRecord(${r.id})">刪除</button>
             </td>
         </tr>
-        `; // ⭐ 移除了 category 欄位 ⭐
+        `;
         tableBody.innerHTML += row;
     });
 
     if (totalRecords === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>'; // ⭐ 還原為 colspan="5" ⭐
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>';
     }
 
     // 5. 更新分頁控制項狀態
@@ -110,7 +108,7 @@ function displayRecords(list = records) {
 prevPageBtn.addEventListener('click', () => {
     if (currentPage > 1) {
         currentPage--;
-        displayRecords(getFilteredRecords()); 
+        displayRecords(getFilteredRecords()); 
     }
 });
 
@@ -118,11 +116,11 @@ nextPageBtn.addEventListener('click', () => {
     const totalPages = Math.ceil(records.length / recordsPerPage);
     if (currentPage < totalPages) {
         currentPage++;
-        displayRecords(getFilteredRecords()); 
+        displayRecords(getFilteredRecords()); 
     }
 });
 
-// 輔助函數：根據 filterSelect 的值返回過濾後的 records 
+// 輔助函數：根據 filterSelect 的值返回過濾後的 records 
 function getFilteredRecords() {
     const value = filterSelect.value;
     let filtered = records;
@@ -386,8 +384,12 @@ async function getAIAdvice() {
         aiButton.disabled = false; // 重新啟用按鈕
     }
 }
+// ======= 數據統計函數 (放置在 updateChart 之後，以確保 DOM 元素已載入) =======
 function updateSummaryStats(list = records) {
     if (list.length === 0) {
+        // 檢查 avgGlucoseEl 是否為 null，如果為 null，表示元素未載入，跳出
+        if (!avgGlucoseEl) return; 
+        
         avgGlucoseEl.innerText = '--';
         tirPercentEl.innerText = '--';
         tarPercentEl.innerText = '--';
@@ -398,23 +400,19 @@ function updateSummaryStats(list = records) {
     let totalGlucose = 0;
     let tirCount = 0; // Time In Range (70-140)
     let tarCount = 0; // Time Above Range (>140)
-    let tbrCount = 0; // Time Below Range (<70)
-
+    
     list.forEach(r => {
         totalGlucose += r.glucose;
         if (r.glucose >= 70 && r.glucose <= 140) {
             tirCount++;
         } else if (r.glucose > 140) {
             tarCount++;
-        } else {
-            tbrCount++;
         }
     });
 
     const avg = (totalGlucose / totalCount).toFixed(1);
     const tirPercent = ((tirCount / totalCount) * 100).toFixed(0);
     const tarPercent = ((tarCount / totalCount) * 100).toFixed(0);
-    const tbrPercent = ((tbrCount / totalCount) * 100).toFixed(0);
     
     // 設置結果
     avgGlucoseEl.innerText = `${avg} mg/dL`;
