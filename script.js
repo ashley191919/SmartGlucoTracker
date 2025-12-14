@@ -15,6 +15,12 @@ const chartStatusEl = document.getElementById('chartStatus');
 let records = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
 let glucoseChart = null;
 
+let currentPage = 1; // 當前小分頁 (10 筆)
+const recordsPerPage = 10;
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageInfoSpan = document.getElementById('pageInfo');
+
 // 輔助函數：根據血糖值回傳 CSS class (功能 A)
 function getStatusClass(glucose) {
     if (glucose > 140) return 'glucose-high';
@@ -26,12 +32,51 @@ function getStatusClass(glucose) {
 function displayRecords(list = records) {
     tableBody.innerHTML = "";
 
-    list.forEach(r => {
-        // ⭐ 新增: 根據血糖值判斷狀態 class ⭐
-        const statusClass = getStatusClass(r.glucose); 
+    // 1. ⭐ 排序：以日期時間降序排列 (最新在前) ⭐
+    // 這裡只需要對傳入的列表進行排序
+    const sortedList = [...list].sort(
+        (a, b) => new Date(b.date + " " + b.time) - new Date(a.date + " " + a.time)
+    );
+
+    // 2. 計算分頁資訊
+    const totalRecords = sortedList.length;
+    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    
+    // 確保當前頁碼在有效範圍內 (特別是刪除紀錄時)
+    if (currentPage > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+    } else if (totalPages === 0) {
+        currentPage = 0;
+    }
+
+    // 3. 取得當前頁面的資料
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = startIndex + recordsPerPage;
+    const currentRecords = sortedList.slice(startIndex, endIndex);
+
+    // 4. 渲染表格
+    let lastMonth = ""; // 用於追蹤月份，實現大分頁提示
+
+    currentRecords.forEach(r => {
+        // ⭐ 大分頁提示：檢查是否換月 ⭐
+        const currentMonth = r.date.substring(0, 7); // 格式如 YYYY-MM
+        if (currentMonth !== lastMonth) {
+            const monthRow = `
+                <tr>
+                    <td colspan="5" style="background-color: var(--low-bg); font-weight: bold; text-align: center; color: var(--text-color); border-bottom: none;">
+                        --- ${currentMonth} 月份紀錄 ---
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += monthRow;
+            lastMonth = currentMonth;
+        }
+
+        const statusClass = getStatusClass(r.glucose); 
+        // 假設您在 table 結構沒有變動 (日期, 時間, 血糖值, 降血糖藥, 操作)
         
         const row = `
-        <tr class="${statusClass}"> 
+        <tr class="${statusClass}"> 
             <td>${r.date}</td>
             <td>${r.time}</td>
             <td>${r.glucose}</td>
@@ -45,8 +90,48 @@ function displayRecords(list = records) {
         `;
         tableBody.innerHTML += row;
     });
+
+    if (totalRecords === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>';
+    }
+
+    // 5. 更新分頁控制項狀態
+    pageInfoSpan.innerText = `頁次: ${currentPage} / ${totalPages || 1}`;
+    prevPageBtn.disabled = currentPage <= 1;
+    nextPageBtn.disabled = currentPage >= totalPages;
 }
 
+prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        // 重新繪製當前篩選狀態下的表格
+        displayRecords(getFilteredRecords()); 
+    }
+});
+
+nextPageBtn.addEventListener('click', () => {
+    const totalPages = Math.ceil(records.length / recordsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        // 重新繪製當前篩選狀態下的表格
+        displayRecords(getFilteredRecords()); 
+    }
+});
+
+// ⭐ 輔助函數：根據 filterSelect 的值返回過濾後的 records ⭐
+function getFilteredRecords() {
+    const value = filterSelect.value;
+    let filtered = records;
+
+    if (value === "high") {
+        filtered = records.filter(r => r.glucose > 140);
+    } else if (value === "normal") {
+        filtered = records.filter(r => r.glucose >= 70 && r.glucose <= 140);
+    } else if (value === "low") {
+        filtered = records.filter(r => r.glucose < 70);
+    }
+    return filtered;
+}
 
 // ======= 更新折線圖 (整合功能 B：目標區間) =======
 function updateChart(filteredList = null) {
@@ -215,7 +300,8 @@ form.addEventListener("submit", e => {
 
     localStorage.setItem("glucoseRecords", JSON.stringify(records));
 
-    displayRecords();
+    currentPage = 1; // ⭐ 新增紀錄後回到第一頁 ⭐
+    displayRecords(); // 不帶參數，顯示全部資料的第一頁
     updateChart();
     form.reset();
 });
@@ -225,7 +311,8 @@ function deleteRecord(id) {
 
     records = records.filter(r => r.id !== id);
     localStorage.setItem("glucoseRecords", JSON.stringify(records));
-    displayRecords();
+    // ⭐ 刪除後不強制重設 currentPage=1，讓 displayRecords 函數自行調整頁碼 ⭐
+    displayRecords(getFilteredRecords());
     updateChart();
 }
 
@@ -233,19 +320,9 @@ function deleteRecord(id) {
 const filterSelect = document.getElementById("filterSelect");
 
 filterSelect.addEventListener("change", () => {
-    const value = filterSelect.value;
-
-    let filtered = records;
-
-    if (value === "high") {
-        filtered = records.filter(r => r.glucose > 140);
-    } else if (value === "normal") {
-        filtered = records.filter(r => r.glucose >= 70 && r.glucose <= 140);
-    } else if (value === "low") {
-        filtered = records.filter(r => r.glucose < 70);
-    }
-
-    displayRecords(filtered);
+    // ⭐ 篩選變更後，重設頁碼並呼叫新的 displayRecords 進行過濾和分頁 ⭐
+    currentPage = 1; 
+    displayRecords(getFilteredRecords());
 });
 
 // ======= AI 建議 (整合功能 G：藥物分析提示詞) =======
