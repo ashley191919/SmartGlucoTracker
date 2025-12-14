@@ -11,6 +11,7 @@ const chartEndDate = document.getElementById('chartEndDate');
 const applyChartFilterBtn = document.getElementById('applyChartFilter');
 const resetChartFilterBtn = document.getElementById('resetChartFilter');
 const chartStatusEl = document.getElementById('chartStatus');
+const chartCategoryFilter = document.getElementById('chartCategoryFilter');
 
 let records = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
 let glucoseChart = null;
@@ -251,18 +252,23 @@ function updateChart(filteredList = null) {
 applyChartFilterBtn.addEventListener('click', () => {
     const start = chartStartDate.value;
     const end = chartEndDate.value;
+    const category = chartCategoryFilter.value;
 
     if (!start || !end) {
         alert("請選擇開始和結束日期。");
         return;
     }
     
-    // 篩選數據：日期必須在 [start, end] 之間
-    const filtered = records.filter(r => r.date >= start && r.date <= end);
+    // 篩選數據：日期必須在 [start, end] 之間 AND 類別符合
+    const filtered = records.filter(r => {
+        const dateMatch = r.date >= start && r.date <= end;
+        const categoryMatch = category === 'all' || r.category === category; // 類別符合邏輯
+        return dateMatch && categoryMatch;
+    });
     
     if (filtered.length === 0) {
         alert("所選期間沒有資料。");
-        updateChart([]); // 傳入空陣列來清空圖表
+        updateChart([]); 
         return;
     }
 
@@ -275,7 +281,7 @@ resetChartFilterBtn.addEventListener('click', () => {
     // 清空篩選日期欄位
     chartStartDate.value = '';
     chartEndDate.value = '';
-    // 呼叫 updateChart 不帶參數，恢復顯示最新 30 筆
+    chartCategoryFilter.value = 'all';
     updateChart();
 });
 
