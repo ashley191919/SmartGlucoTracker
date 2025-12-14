@@ -146,15 +146,15 @@ function updateChart(filteredList = null) {
         const end = dataToChart[dataToChart.length - 1].date;
         statusMessage = `目前顯示：${start} 至 ${end} 的 ${dataToChart.length} 筆紀錄。`;
     } else {
-        // 方案 A: 預設使用所有紀錄 (用於計算最新 30 筆)
+        // 方案 A: 預設使用所有紀錄 (用於計算最新 15 筆)
         dataToChart = records;
 
         if (records.length === 0) {
             statusMessage = "目前沒有血糖紀錄可供繪圖。";
-        } else if (records.length <= 30) {
+        } else if (records.length <= 15) { 
             statusMessage = `目前顯示：所有 ${records.length} 筆紀錄。`;
         } else {
-            statusMessage = `目前顯示：最新 30 筆紀錄。`;
+            statusMessage = `目前顯示：最新 15 筆紀錄。`; 
         }
     }
 
@@ -164,10 +164,10 @@ function updateChart(filteredList = null) {
         (a, b) => new Date(a.date + " " + a.time) - new Date(b.date + " " + b.time)
     );
 
-    // 3. 處理預設情況下的「只顯示最新 30 筆」
-    if (!filteredList && records.length > 30) {
-        // 如果是預設模式 (沒有傳入 filteredList 且資料超過 30 筆)，則只取最新的
-        sortedData = sortedData.slice(-30);
+    // 3. 處理預設情況下的「只顯示最新 15 筆」
+    if (!filteredList && records.length > 15) {
+        // 如果是預設模式 (沒有傳入 filteredList 且資料超過 15 筆)，則只取最新的
+        sortedData = sortedData.slice(-15);
     }
 
 
