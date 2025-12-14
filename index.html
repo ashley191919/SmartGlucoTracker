@@ -182,6 +182,26 @@
         <h1>血糖紀錄系統</h1>
 
         <div class="card">
+            <h2>數據摘要</h2>
+            <div id="statsSummary" style="display: flex; justify-content: space-around; text-align: center; font-size: 0.9em; flex-wrap: wrap;">
+                <div>
+                    <strong style="color: var(--primary-color);">平均血糖</strong>
+                    <p id="avgGlucose" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+                <div>
+                    <strong style="color: var(--normal-color);">正常範圍 (TIR)</strong>
+                    <p id="tirPercent" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+                <div>
+                    <strong style="color: var(--high-color);">高血糖 (TAR)</strong>
+                    <p id="tarPercent" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+            </div>
+            <p style="font-size: 0.8em; color: #6c757d; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 5px;">*TIR 目標為 >70%。數據基於所有紀錄。</p>
+        </div>
+
+
+        <div class="card">
             <h2>新增紀錄</h2>
             <form id="glucoseForm">
                 <label>日期：
@@ -234,31 +254,17 @@
         </div>
 
         <div class="card">
-    <h2>血糖趨勢圖</h2>
-        <div id="chartFilter" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px;">
-            
-            <label>從：<input type="date" id="chartStartDate" style="max-width: 130px;"></label>
-            <label>到：<input type="date" id="chartEndDate" style="max-width: 130px;"></label>
-            
-            <label>類別：
-                <select id="chartCategoryFilter" style="max-width: 100px;">
-                    <option value="all">所有類別</option>
-                    <option value="餐前">餐前</option>
-                    <option value="餐後2小時">餐後 2 小時</option>
-                    <option value="睡前">睡前</option>
-                    <option value="其他">其他</option>
-                </select>
-            </label>
-            
-            <div style="display: flex; gap: 5px;">
+            <h2>血糖趨勢圖</h2>
+            <div id="chartFilter" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px;">
+                <label>從：<input type="date" id="chartStartDate" style="max-width: 130px;"></label>
+                <label>到：<input type="date" id="chartEndDate" style="max-width: 130px;"></label>
                 <button id="applyChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #28a745;">套用篩選</button>
                 <button id="resetChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #6c757d;">最新15筆</button>
             </div>
+            <canvas id="glucoseChart" width="400" height="200"></canvas>
+            <p id="chartStatus" style="font-size: 0.9em; color: #6c757d; text-align: center; margin-top: 10px;">目前顯示：最新 15 筆紀錄。</p>
         </div>
-        
-        <canvas id="glucoseChart" width="400" height="200"></canvas>
-        <p id="chartStatus" style="font-size: 0.9em; color: #6c757d; text-align: center; margin-top: 10px;">目前顯示：最新 15 筆紀錄。</p>
-    </div>
+
         <div class="card">
             <h2>AI 血糖健康建議</h2>
             <button onclick="getAIAdvice()">產生 AI 建議</button>
