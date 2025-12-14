@@ -151,7 +151,7 @@ async function getAIAdvice() {
     請將建議限制在 3 點清單，每點不超過一句話。
     `;
 
-    const response = await fetch("/api/ai-advice", {
+    const response = await fetch("https://glucose-tracker-api.onrender.com" + "/api/ai-advice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt })
