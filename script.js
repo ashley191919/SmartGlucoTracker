@@ -219,16 +219,7 @@ async function getAIAdvice() {
         if (data.error) {
             resultArea.innerText = `AI 服務錯誤：${data.error}`;
         } else {
-            let rawText = data.result;
-            
-            // 將 ** 和 * 替換成空字串
-            // g 標記表示全域替換 (Global)
-            rawText = rawText.replace(/\*\*/g, '').replace(/\*/g, '');
-            
-            resultArea.innerHTML = `
-        <p><strong>AI 分析範圍：</strong> 最近 ${recent.length} 筆紀錄 (從 ${oldestDate} 到 ${newestDate})</p>
-        <p>${rawText}</p>
-        `;
+            resultArea.innerText = data.result;
         }
         
     } catch (error) {
