@@ -1,9 +1,9 @@
+// server.js 檔案內容（請用這個替換您 Render 上的 server.js 內容）
+
 import express from "express";
-// ❗ 移除 import fetch from "node-fetch";
+import fetch from "node-fetch"; // 確保您有 node-fetch
 import cors from "cors";
 import dotenv from "dotenv";
-// ⭐ 引入 Gemini SDK ⭐
-import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -12,73 +12,65 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// ⭐ 初始化 Gemini 客戶端 ⭐
-// SDK 會自動從 process.env.GEMINI_API_KEY 讀取金鑰，不需要手動傳遞
-const ai = new GoogleGenAI({});
+// 設置連接埠
+const PORT = process.env.PORT || 3000;
 
 app.post("/api/ai-advice", async (req, res) => {
+    // 從前端取得 prompt
     const { prompt } = req.body;
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_KEY) {
+        // 如果金鑰未載入，發送 500 錯誤
+        return res.status(500).json({ error: "Gemini API 金鑰未設定，請檢查環境變數。" });
+    }
 
     try {
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ error: "Gemini API 金鑰未設定，請檢查 .env 檔案。" });
-        }
-        
-        // ⭐ 使用 SDK 呼叫 generateContent ⭐
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt, // SDK 接受字串 prompt
+        const geminiEndpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
             config: {
-                maxOutputTokens: 2048, 
+                maxOutputTokens: 2048, // 確保輸出長度夠長
                 safetySettings: [
-                    {
-                        category: "HARM_CATEGORY_HARASSMENT",
-                        threshold: "BLOCK_NONE",
-                    },
-                    {
-                        category: "HARM_CATEGORY_HATE_SPEECH",
-                        threshold: "BLOCK_NONE",
-                    },
-                    {
-                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold: "BLOCK_NONE",
-                    },
-                    {
-                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold: "BLOCK_NONE",
-                    },
+                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
                 ],
-            },
+            }
+        };
+
+        const response = await fetch(geminiEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
 
-        // SDK 的回應格式更簡潔
-        const textResult = response.text;
+        const data = await response.json();
+
+        if (!response.ok) {
+            // 處理 API 錯誤 (例如 400, 429)
+            return res.status(response.status).json({
+                error: data.error?.message || "Gemini API 請求失敗，請檢查金鑰或用量。"
+            });
+        }
+        
+        // 提取 Gemini 的回應文字
+        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (!textResult) {
-            // 如果 API 回應空內容，通常是因為安全設定或內容過短
-            return res.status(500).json({ 
-                error: "AI 模型未能產生有效的建議，請嘗試輸入更多血糖紀錄。" 
-            });
+             return res.status(500).json({ error: "AI 回應格式錯誤或內容空白。" });
         }
         
         res.json({ result: textResult });
 
     } catch (error) {
-        // SDK 捕捉到的錯誤通常包含詳細資訊
-        console.error("Server Error:", error.message); 
-        
-        // 檢查是否為 400 錯誤（例如 API 拒絕內容）
-        if (error.message.includes("400")) {
-            return res.status(400).json({ 
-                error: `請求格式或內容錯誤：${error.message}` 
-            });
-        }
-
+        console.error("Server Error (Catch Block):", error);
         res.status(500).json({ error: "後端服務內部錯誤或網路連線失敗" });
     }
 });
 
-const PORT = process.env.PORT || 3000; // 使用雲端提供的 PORT，否則使用 3000
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
