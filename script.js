@@ -56,7 +56,7 @@ function updateChart() {
 
                 // 高低血糖點顏色
                 pointBackgroundColor: data.map(g => {
-                    if (g < 70) return "blue";    // 低血糖
+                    if (g < 70) return "yellow";    // 低血糖
                     if (g > 140) return "red";     // 高血糖
                     return "green";               // 正常
                 })
@@ -148,7 +148,11 @@ async function getAIAdvice() {
 
     ${recordText}
 
-    請將建議限制在 3 點清單，每點不超過一句話。
+    請特別分析：
+    1. 血糖值與服藥之間的關聯和趨勢 (例如：服藥後數值是否穩定下降)。
+    2. 針對高/低血糖狀況提供生活建議。
+    
+    請將建議限制在 3 點清單，每點不超過兩句話。
     `;
 
     const response = await fetch("https://glucose-tracker-api.onrender.com" + "/api/ai-advice", {
