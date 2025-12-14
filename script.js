@@ -6,6 +6,12 @@ const tableBody = document.getElementById('recordTableBody');
 const ctx = document.getElementById('glucoseChart').getContext('2d');
 const aiButton = document.querySelector('button[onclick="getAIAdvice()"]'); // 取得 AI 按鈕
 
+const chartStartDate = document.getElementById('chartStartDate');
+const chartEndDate = document.getElementById('chartEndDate');
+const applyChartFilterBtn = document.getElementById('applyChartFilter');
+const resetChartFilterBtn = document.getElementById('resetChartFilter');
+const chartStatusEl = document.getElementById('chartStatus');
+
 let records = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
 let glucoseChart = null;
 
@@ -43,13 +49,46 @@ function displayRecords(list = records) {
 
 
 // ======= 更新折線圖 (整合功能 B：目標區間) =======
-function updateChart() {
-    const sorted = [...records].sort(
+function updateChart(filteredList = null) {
+    let dataToChart = [];
+    let statusMessage = "";
+
+    // 1. 處理數據源 (方案 A: 最新 30 筆; 方案 B: 自訂篩選)
+    const sortedAll = [...records].sort(
         (a, b) => new Date(a.date + " " + a.time) - new Date(b.date + " " + b.time)
     );
 
-    const labels = sorted.map(r => `${r.date} ${r.time}`);
-    const data = sorted.map(r => r.glucose);
+    if (filteredList && filteredList.length > 0) {
+        // 使用自訂篩選的列表 (來自方案 B)
+        dataToChart = filteredList;
+        const start = dataToChart[0].date;
+        const end = dataToChart[dataToChart.length - 1].date;
+        statusMessage = `目前顯示：${start} 至 ${end} 的 ${dataToChart.length} 筆紀錄。`;
+    } else {
+        // 預設行為：只取最近 30 筆 (來自方案 A)
+        dataToChart = sortedAll.slice(-30);
+        
+        if (records.length === 0) {
+            statusMessage = "目前沒有血糖紀錄可供繪圖。";
+        } else if (records.length <= 30) {
+            statusMessage = `目前顯示：所有 ${records.length} 筆紀錄。`;
+        } else {
+             statusMessage = `目前顯示：最新 30 筆紀錄。`;
+        }
+    }
+
+    // 2. 如果沒有資料，直接清空圖表
+    if (dataToChart.length === 0) {
+        if (glucoseChart) glucoseChart.destroy();
+        glucoseChart = null; 
+        chartStatusEl.innerText = statusMessage;
+        return;
+    }
+    
+    // 3. 準備 Chart.js 資料
+    const labels = dataToChart.map(r => `${r.date} ${r.time}`);
+    const data = dataToChart.map(r => r.glucose);
+    chartStatusEl.innerText = statusMessage; // 更新提示訊息
 
     // 每次先銷毀舊圖表，避免重疊
     if (glucoseChart) glucoseChart.destroy();
@@ -61,20 +100,20 @@ function updateChart() {
             datasets: [{
                 label: "血糖值 (mg/dL)",
                 data: data,
-                borderColor: "rgb(0, 123, 255)", // 使用主題色
+                borderColor: "rgb(0, 123, 255)", 
                 borderWidth: 2,
                 fill: false,
                 tension: 0.2,
 
-                // 高低血糖點顏色
                 pointBackgroundColor: data.map(g => {
-                    if (g < 70) return "var(--low-color)";    // 低血糖
-                    if (g > 140) return "var(--high-color)";  // 高血糖
-                    return "var(--normal-color)";              // 正常
+                    if (g < 70) return "var(--low-color)";    // 低血糖
+                    if (g > 140) return "var(--high-color)";  // 高血糖
+                    return "var(--normal-color)";              // 正常
                 })
             }]
         },
         options: {
+            // ... (options 配置保持不變) ...
             responsive: true,
             scales: {
                 y: {
@@ -82,15 +121,15 @@ function updateChart() {
                     suggestedMax: 200
                 }
             },
-            // ⭐ 新增: 註釋外掛配置 (目標區間 70-140) ⭐
+            // ⭐ 註釋外掛配置 (目標區間 70-140) 保持不變 ⭐
             plugins: {
                 annotation: {
                     annotations: {
                         normalRange: {
                             type: 'box',
-                            yMin: 70,       // 正常範圍下限
-                            yMax: 140,      // 正常範圍上限
-                            backgroundColor: 'rgba(40, 167, 69, 0.15)', // 淺綠色背景
+                            yMin: 70,       
+                            yMax: 140,      
+                            backgroundColor: 'rgba(40, 167, 69, 0.15)', 
                             borderColor: 'rgba(0, 0, 0, 0)',
                             borderWidth: 0,
                             drawTime: 'beforeDatasetsDraw',
@@ -114,6 +153,37 @@ function updateChart() {
         }
     });
 }
+
+applyChartFilterBtn.addEventListener('click', () => {
+    const start = chartStartDate.value;
+    const end = chartEndDate.value;
+
+    if (!start || !end) {
+        alert("請選擇開始和結束日期。");
+        return;
+    }
+    
+    // 篩選數據：日期必須在 [start, end] 之間
+    const filtered = records.filter(r => r.date >= start && r.date <= end);
+    
+    if (filtered.length === 0) {
+        alert("所選期間沒有資料。");
+        updateChart([]); // 傳入空陣列來清空圖表
+        return;
+    }
+
+    // 由於 updateChart 會重新排序，這裡直接傳遞篩選結果即可
+    updateChart(filtered); 
+});
+
+// ⭐ 重設按鈕事件處理 (回到方案 A 的預設狀態) ⭐
+resetChartFilterBtn.addEventListener('click', () => {
+    // 清空篩選日期欄位
+    chartStartDate.value = '';
+    chartEndDate.value = '';
+    // 呼叫 updateChart 不帶參數，恢復顯示最新 30 筆
+    updateChart();
+});
 
 // ======= 表單送出 & 刪除 (保持不變) =======
 form.addEventListener("submit", e => {
