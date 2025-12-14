@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>血糖紀錄系統</title>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .med-yes {
+            color: green;
+            font-weight: bold;
+        }
+        .med-no {
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>血糖紀錄系統</h1>
+
+    <form id="glucoseForm">
+        <label>日期：</label>
+        <input type="date" id="date" required><br><br>
+
+        <label>時間：</label>
+        <input type="time" id="time" required><br><br>
+
+        <label>血糖值 (mg/dL)：</label>
+        <input type="number" id="glucose" required><br><br>
+
+        <label>
+            <input type="checkbox" id="medication">
+            是否有吃降血糖藥
+        </label><br><br>
+
+        <button type="submit">新增紀錄</button>
+    </form>
+
+    <h2>紀錄列表</h2>
+
+    <div id="filterContainer">
+        <label for="filterSelect">血糖狀態篩選：</label>
+        <select id="filterSelect">
+            <option value="all">全部</option>
+            <option value="high">高血糖</option>
+            <option value="normal">正常</option>
+            <option value="low">低血糖</option>
+        </select>
+    </div>
+    <br> <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>時間</th>
+                <th>血糖值</th>
+                <th>降血糖藥</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="recordTableBody">
+        </tbody>
+    </table>
+
+    <h2>血糖趨勢圖</h2>
+    <canvas id="glucoseChart" width="400" height="200"></canvas>
+
+    <h2>AI 血糖健康建議</h2>
+    <button onclick="getAIAdvice()">產生 AI 建議</button>
+    <p id="aiResult">尚未產生建議</p>
+
+<script src="script.js"></script>
+
+
+</body>
+</html>
