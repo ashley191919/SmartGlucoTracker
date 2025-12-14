@@ -193,15 +193,6 @@
                 <label>血糖值 (mg/dL)：
                     <input type="number" id="glucose" required>
                 </label>
-                <label>紀錄類別：
-                    <select id="category" required>
-                        <option value="">請選擇</option>
-                        <option value="餐前">餐前 (空腹)</option>
-                        <option value="餐後2小時">餐後 2 小時</option>
-                        <option value="睡前">睡前</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </label>
                 <label>
                     <input type="checkbox" id="medication">
                     是否有吃降血糖藥
@@ -227,7 +218,6 @@
                     <tr>
                         <th>日期</th>
                         <th>時間</th>
-                        <th>類別</th>
                         <th>血糖值</th>
                         <th>降血糖藥</th>
                         <th>操作</th>
@@ -246,23 +236,13 @@
         <div class="card">
             <h2>血糖趨勢圖</h2>
             <div id="chartFilter" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px;">
-                <canvas id="glucoseChart" width="400" height="200"></canvas>
-                <p id="chartStatus" style="font-size: 0.9em; color: #6c757d; text-align: center; margin-top: 10px;">
-                    目前顯示：最新 15 筆紀錄。
-                </p>
                 <label>從：<input type="date" id="chartStartDate" style="max-width: 130px;"></label>
                 <label>到：<input type="date" id="chartEndDate" style="max-width: 130px;"></label>
-                <label>類別：
-                    <select id="chartCategoryFilter" style="max-width: 100px;"> <option value="all">所有類別</option>
-                        <option value="餐前">餐前</option>
-                        <option value="餐後2小時">餐後 2 小時</option>
-                        <option value="睡前">睡前</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </label>
                 <button id="applyChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #28a745;">套用篩選</button>
                 <button id="resetChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #6c757d;">顯示最新15筆</button>
             </div>
+            <canvas id="glucoseChart" width="400" height="200"></canvas>
+            <p id="chartStatus" style="font-size: 0.9em; color: #6c757d; text-align: center; margin-top: 10px;">目前顯示：最新 15 筆紀錄。</p>
         </div>
 
         <div class="card">
