@@ -1,28 +1,37 @@
-// server.js 檔案內容（請用這個替換您 Render 上的 server.js 內容）
+// server.js 檔案內容（優化版本）
 
 import express from "express";
-import fetch from "node-fetch"; // 確保您有 node-fetch
+import fetch from "node-fetch"; 
 import cors from "cors";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
+
+// ⭐ 1. 啟用 CORS 並允許所有來源 ⭐
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+
+// ⭐ 2. 顯式處理 CORS 預檢請求 (OPTIONS) ⭐
+// 這有助於消除一些 400/CORS 相關的錯誤
+app.options("*", cors()); 
 
 // 設置連接埠
 const PORT = process.env.PORT || 3000;
 
 app.post("/api/ai-advice", async (req, res) => {
-    // 從前端取得 prompt
     const { prompt } = req.body;
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
+    // 檢查金鑰是否有效 (雖然 400 錯誤不是金鑰問題，但這是一個好的檢查)
     if (!GEMINI_KEY) {
-        // 如果金鑰未載入，發送 500 錯誤
-        return res.status(500).json({ error: "Gemini API 金鑰未設定，請檢查環境變數。" });
+        return res.status(500).json({ error: "Gemini API 金鑰未設定，請檢查 Render 環境變數。" });
+    }
+    if (!prompt) {
+        // 確保 prompt 不為空，否則會導致 400 錯誤
+        return res.status(400).json({ error: "請求參數錯誤：缺少 prompt。" });
     }
 
     try {
@@ -31,7 +40,7 @@ app.post("/api/ai-advice", async (req, res) => {
         const payload = {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             config: {
-                maxOutputTokens: 2048, // 確保輸出長度夠長
+                maxOutputTokens: 2048, 
                 safetySettings: [
                     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
                     { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -50,13 +59,14 @@ app.post("/api/ai-advice", async (req, res) => {
         const data = await response.json();
 
         if (!response.ok) {
-            // 處理 API 錯誤 (例如 400, 429)
+            // ⭐ 增加錯誤紀錄，幫助分析 Render 日誌 ⭐
+            console.error("Gemini API Error Response:", response.status, data.error?.message); 
+
             return res.status(response.status).json({
-                error: data.error?.message || "Gemini API 請求失敗，請檢查金鑰或用量。"
+                error: data.error?.message || `Gemini API 請求失敗，狀態碼: ${response.status}`
             });
         }
         
-        // 提取 Gemini 的回應文字
         const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (!textResult) {
