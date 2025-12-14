@@ -230,7 +230,16 @@
 
         <div class="card">
             <h2>血糖趨勢圖</h2>
+            <div id="chartFilter" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px;">
+                <label>從：<input type="date" id="chartStartDate" style="max-width: 130px;"></label>
+                <label>到：<input type="date" id="chartEndDate" style="max-width: 130px;"></label>
+                <button id="applyChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #28a745;">套用篩選</button>
+                <button id="resetChartFilter" style="margin-top:0; padding: 8px 10px; flex-shrink: 0; background-color: #6c757d;">顯示最新30筆</button>
+            </div>
             <canvas id="glucoseChart" width="400" height="200"></canvas>
+            <p id="chartStatus" style="font-size: 0.9em; color: #6c757d; text-align: center; margin-top: 10px;">
+                目前顯示：最新 30 筆紀錄。
+            </p>
         </div>
 
         <div class="card">
