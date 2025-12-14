@@ -1,10 +1,11 @@
 // ⭐ 必須確保 index.html 中有 Chart.js 註釋外掛 CDN 才能使用功能 B ⭐
 
-// 取得 DOM 元素
+// ======= 取得 DOM 元素 (統一放在開頭) =======
 const form = document.getElementById('glucoseForm');
 const tableBody = document.getElementById('recordTableBody');
-const ctx = document.getElementById('glucoseChart').getContext('2d');
-const aiButton = document.querySelector('button[onclick="getAIAdvice()"]'); // 取得 AI 按鈕
+// ⚠️ 檢查: 確保 index.html 中 canvas ID 正確
+const ctx = document.getElementById('glucoseChart').getContext('2d'); 
+const aiButton = document.querySelector('button[onclick="getAIAdvice()"]');
 
 const chartStartDate = document.getElementById('chartStartDate');
 const chartEndDate = document.getElementById('chartEndDate');
@@ -12,6 +13,7 @@ const applyChartFilterBtn = document.getElementById('applyChartFilter');
 const resetChartFilterBtn = document.getElementById('resetChartFilter');
 const chartStatusEl = document.getElementById('chartStatus');
 
+// ⭐ 數據摘要元素必須在這裡獲取 ⭐
 const avgGlucoseEl = document.getElementById('avgGlucose');
 const tirPercentEl = document.getElementById('tirPercent');
 const tarPercentEl = document.getElementById('tarPercent');
@@ -24,7 +26,6 @@ const recordsPerPage = 10;
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageInfoSpan = document.getElementById('pageInfo');
-// 假設 filterSelect 已經定義 (在您上一個程式碼中是存在的)
 const filterSelect = document.getElementById("filterSelect");
 
 
