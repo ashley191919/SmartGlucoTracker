@@ -1,43 +1,43 @@
-// server.js 檔案內容（優化版本）
+// server.js 檔案內容（使用 Gemini SDK 的最終版本）
 
 import express from "express";
-import fetch from "node-fetch"; 
+// ❗ 移除 import fetch from "node-fetch"; 
 import cors from "cors";
 import dotenv from "dotenv";
+// ⭐ 引入 Gemini SDK ⭐
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
 const app = express();
-
-// ⭐ 1. 啟用 CORS 並允許所有來源 ⭐
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// ⭐ 2. 顯式處理 CORS 預檢請求 (OPTIONS) ⭐
-// 這有助於消除一些 400/CORS 相關的錯誤
+// 顯式處理 CORS 預檢請求
 app.options("*", cors()); 
 
-// 設置連接埠
+// ⭐ 初始化 Gemini 客戶端 ⭐
+// SDK 會自動從 process.env.GEMINI_API_KEY 讀取金鑰，不需要手動傳遞
+const ai = new GoogleGenAI({});
+
 const PORT = process.env.PORT || 3000;
 
 app.post("/api/ai-advice", async (req, res) => {
     const { prompt } = req.body;
-    const GEMINI_KEY = process.env.GEMINI_API_KEY;
-
-    // 檢查金鑰是否有效 (雖然 400 錯誤不是金鑰問題，但這是一個好的檢查)
-    if (!GEMINI_KEY) {
-        return res.status(500).json({ error: "Gemini API 金鑰未設定，請檢查 Render 環境變數。" });
-    }
-    if (!prompt) {
-        // 確保 prompt 不為空，否則會導致 400 錯誤
-        return res.status(400).json({ error: "請求參數錯誤：缺少 prompt。" });
-    }
 
     try {
-        const geminiEndpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-
-        const payload = {
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ error: "Gemini API 金鑰未設定。" });
+        }
+        if (!prompt) {
+            return res.status(400).json({ error: "請求參數錯誤：缺少 prompt。" });
+        }
+        
+        // ⭐ 使用 SDK 呼叫 generateContent ⭐
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            // SDK 接受字串 prompt，會自動轉換成正確的 contents 格式
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             config: {
                 maxOutputTokens: 2048, 
@@ -47,27 +47,11 @@ app.post("/api/ai-advice", async (req, res) => {
                     { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
                     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
                 ],
-            }
-        };
-
-        const response = await fetch(geminiEndpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            },
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            // ⭐ 增加錯誤紀錄，幫助分析 Render 日誌 ⭐
-            console.error("Gemini API Error Response:", response.status, data.error?.message); 
-
-            return res.status(response.status).json({
-                error: data.error?.message || `Gemini API 請求失敗，狀態碼: ${response.status}`
-            });
-        }
-        
-        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        // SDK 的回應格式更簡潔
+        const textResult = response.text;
         
         if (!textResult) {
              return res.status(500).json({ error: "AI 回應格式錯誤或內容空白。" });
@@ -76,7 +60,15 @@ app.post("/api/ai-advice", async (req, res) => {
         res.json({ result: textResult });
 
     } catch (error) {
-        console.error("Server Error (Catch Block):", error);
+        console.error("Server Error (SDK Catch Block):", error.message);
+        
+        // 處理 SDK 拋出的錯誤，其中通常包含 400 錯誤的詳細資訊
+        if (error.message.includes("400") || error.message.includes("403")) {
+            return res.status(400).json({ 
+                error: `請求或權限錯誤：${error.message}` 
+            });
+        }
+        
         res.status(500).json({ error: "後端服務內部錯誤或網路連線失敗" });
     }
 });
