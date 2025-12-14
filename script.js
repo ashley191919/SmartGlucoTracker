@@ -53,45 +53,54 @@ function updateChart(filteredList = null) {
     let dataToChart = [];
     let statusMessage = "";
 
-    // 1. 處理數據源 (方案 A: 最新 30 筆; 方案 B: 自訂篩選)
-    const sortedAll = [...records].sort(
-        (a, b) => new Date(a.date + " " + a.time) - new Date(b.date + " " + b.time)
-    );
-
+    // 1. 選擇數據源
     if (filteredList && filteredList.length > 0) {
-        // 使用自訂篩選的列表 (來自方案 B)
+        // 方案 B: 使用自訂篩選的列表
         dataToChart = filteredList;
         const start = dataToChart[0].date;
         const end = dataToChart[dataToChart.length - 1].date;
         statusMessage = `目前顯示：${start} 至 ${end} 的 ${dataToChart.length} 筆紀錄。`;
     } else {
-        // 預設行為：只取最近 30 筆 (來自方案 A)
-        dataToChart = sortedAll.slice(-30);
-        
+        // 方案 A: 預設使用所有紀錄 (用於計算最新 30 筆)
+        dataToChart = records;
+
         if (records.length === 0) {
-            statusMessage = "目前沒有血糖紀錄可供繪圖。";
-        } else if (records.length <= 30) {
-            statusMessage = `目前顯示：所有 ${records.length} 筆紀錄。`;
-        } else {
-             statusMessage = `目前顯示：最新 30 筆紀錄。`;
-        }
+            statusMessage = "目前沒有血糖紀錄可供繪圖。";
+        } else if (records.length <= 30) {
+            statusMessage = `目前顯示：所有 ${records.length} 筆紀錄。`;
+        } else {
+            statusMessage = `目前顯示：最新 30 筆紀錄。`;
+        }
     }
 
-    // 2. 如果沒有資料，直接清空圖表
-    if (dataToChart.length === 0) {
-        if (glucoseChart) glucoseChart.destroy();
-        glucoseChart = null; 
-        chartStatusEl.innerText = statusMessage;
-        return;
-    }
-    
-    // 3. 準備 Chart.js 資料
-    const labels = dataToChart.map(r => `${r.date} ${r.time}`);
-    const data = dataToChart.map(r => r.glucose);
-    chartStatusEl.innerText = statusMessage; // 更新提示訊息
 
-    // 每次先銷毀舊圖表，避免重疊
-    if (glucoseChart) glucoseChart.destroy();
+    // 2. ⭐ 排序：無論數據來自哪裡，都必須按時間排序 ⭐
+    let sortedData = [...dataToChart].sort(
+        (a, b) => new Date(a.date + " " + a.time) - new Date(b.date + " " + b.time)
+    );
+
+    // 3. 處理預設情況下的「只顯示最新 30 筆」
+    if (!filteredList && records.length > 30) {
+        // 如果是預設模式 (沒有傳入 filteredList 且資料超過 30 筆)，則只取最新的
+        sortedData = sortedData.slice(-30);
+    }
+
+
+    // 4. 如果沒有資料，直接清空圖表
+    if (sortedData.length === 0) {
+        if (glucoseChart) glucoseChart.destroy();
+        glucoseChart = null; 
+        chartStatusEl.innerText = statusMessage;
+        return;
+    }
+    
+    // 5. 準備 Chart.js 資料
+    const labels = sortedData.map(r => `${r.date} ${r.time}`);
+    const data = sortedData.map(r => r.glucose);
+    chartStatusEl.innerText = statusMessage; // 更新提示訊息
+
+    // 每次先銷毀舊圖表，避免重疊
+    if (glucoseChart) glucoseChart.destroy();
 
     glucoseChart = new Chart(ctx, {
         type: "line",
