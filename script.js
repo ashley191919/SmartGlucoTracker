@@ -94,7 +94,7 @@ function displayRecords(list = records) {
     });
 
     if (totalRecords === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">尚無血糖紀錄</td></tr>';
     }
 
     // 5. 更新分頁控制項狀態
