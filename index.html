@@ -180,7 +180,24 @@
     <div id="app-container"> 
 
         <h1>血糖紀錄系統</h1>
-
+        <div class="card">
+            <h2>數據摘要</h2>
+            <div id="statsSummary" style="display: flex; justify-content: space-around; text-align: center; font-size: 0.9em; flex-wrap: wrap;">
+                <div>
+                    <strong style="color: var(--primary-color);">平均血糖</strong>
+                    <p id="avgGlucose" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+                <div>
+                    <strong style="color: var(--normal-color);">正常範圍 (TIR)</strong>
+                    <p id="tirPercent" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+                <div>
+                    <strong style="color: var(--high-color);">高血糖 (TAR)</strong>
+                    <p id="tarPercent" style="font-size: 1.5em; margin: 5px 0;">--</p>
+                </div>
+            </div>
+            <p style="font-size: 0.8em; color: #6c757d; margin-top: 10px; border-top: 1px dashed #eee; padding-top: 5px;">*TIR 目標為 >70%。數據基於所有紀錄。</p>
+        </div>
         <div class="card">
             <h2>新增紀錄</h2>
             <form id="glucoseForm">
