@@ -1,17 +1,21 @@
 // ⭐ 必須確保 index.html 中有 Chart.js 註釋外掛 CDN 才能使用功能 B ⭐
 
-// 取得 DOM 元素
+// ======= 取得 DOM 元素 (確保在初始化前所有元素都已存在) =======
 const form = document.getElementById('glucoseForm');
 const tableBody = document.getElementById('recordTableBody');
 const ctx = document.getElementById('glucoseChart').getContext('2d');
-const aiButton = document.querySelector('button[onclick="getAIAdvice()"]'); // 取得 AI 按鈕
+const aiButton = document.querySelector('button[onclick="getAIAdvice()"]');
 
 const chartStartDate = document.getElementById('chartStartDate');
 const chartEndDate = document.getElementById('chartEndDate');
 const applyChartFilterBtn = document.getElementById('applyChartFilter');
 const resetChartFilterBtn = document.getElementById('resetChartFilter');
 const chartStatusEl = document.getElementById('chartStatus');
-// 移除了：const chartCategoryFilter = document.getElementById('chartCategoryFilter');
+
+// ⭐ 數據摘要元素 ⭐
+const avgGlucoseEl = document.getElementById('avgGlucose');
+const tirPercentEl = document.getElementById('tirPercent');
+const tarPercentEl = document.getElementById('tarPercent');
 
 let records = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
 let glucoseChart = null;
@@ -21,7 +25,6 @@ const recordsPerPage = 10;
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageInfoSpan = document.getElementById('pageInfo');
-// 假設 filterSelect 已經定義 (在您上一個程式碼中是存在的)
 const filterSelect = document.getElementById("filterSelect");
 
 
@@ -32,11 +35,11 @@ function getStatusClass(glucose) {
     return 'glucose-normal';
 }
 
-// ======= 顯示表格 (整合功能 A：表格上色 + 分頁/排序/月份提示) =======
+// ======= 顯示表格 (整合分頁/排序/月份提示) =======
 function displayRecords(list = records) {
     tableBody.innerHTML = "";
 
-    // 1. ⭐ 排序：以日期時間降序排列 (最新在前) ⭐
+    // 1. 排序：以日期時間降序排列 (最新在前)
     const sortedList = [...list].sort(
         (a, b) => new Date(b.date + " " + b.time) - new Date(a.date + " " + a.time)
     );
@@ -58,11 +61,11 @@ function displayRecords(list = records) {
     const currentRecords = sortedList.slice(startIndex, endIndex);
 
     // 4. 渲染表格
-    let lastMonth = ""; // 用於追蹤月份，實現大分頁提示
+    let lastMonth = ""; 
 
     currentRecords.forEach(r => {
-        // ⭐ 大分頁提示：檢查是否換月 ⭐
-        const currentMonth = r.date.substring(0, 7); // 格式如 YYYY-MM
+        // 大分頁提示：檢查是否換月
+        const currentMonth = r.date.substring(0, 7); 
         if (currentMonth !== lastMonth) {
             const monthRow = `
                 <tr>
@@ -70,14 +73,14 @@ function displayRecords(list = records) {
                         --- ${currentMonth} 月份紀錄 ---
                     </td>
                 </tr>
-            `; // ⭐ 還原為 colspan="5" ⭐
+            `;
             tableBody.innerHTML += monthRow;
             lastMonth = currentMonth;
         }
 
         const statusClass = getStatusClass(r.glucose); 
         
-       const row = `
+        const row = `
         <tr class="${statusClass}"> 
             <td>${r.date}</td>
             <td>${r.time}</td>
@@ -89,12 +92,12 @@ function displayRecords(list = records) {
                 <button onclick="deleteRecord(${r.id})">刪除</button>
             </td>
         </tr>
-        `; // ⭐ 移除了 category 欄位 ⭐
+        `;
         tableBody.innerHTML += row;
     });
 
     if (totalRecords === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>'; // ⭐ 還原為 colspan="5" ⭐
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">尚無血糖紀錄</td></tr>';
     }
 
     // 5. 更新分頁控制項狀態
@@ -106,7 +109,7 @@ function displayRecords(list = records) {
 prevPageBtn.addEventListener('click', () => {
     if (currentPage > 1) {
         currentPage--;
-        displayRecords(getFilteredRecords()); 
+        displayRecords(getFilteredRecords()); 
     }
 });
 
@@ -114,11 +117,11 @@ nextPageBtn.addEventListener('click', () => {
     const totalPages = Math.ceil(records.length / recordsPerPage);
     if (currentPage < totalPages) {
         currentPage++;
-        displayRecords(getFilteredRecords()); 
+        displayRecords(getFilteredRecords()); 
     }
 });
 
-// 輔助函數：根據 filterSelect 的值返回過濾後的 records 
+// 輔助函數：根據 filterSelect 的值返回過濾後的 records 
 function getFilteredRecords() {
     const value = filterSelect.value;
     let filtered = records;
@@ -133,7 +136,52 @@ function getFilteredRecords() {
     return filtered;
 }
 
-// ======= 更新折線圖 (整合功能 B：目標區間) =======
+// ======= 數據摘要統計 (功能 F) =======
+function updateSummaryStats(list = records) {
+    if (list.length === 0) {
+        // 確保元素存在時才更新
+        if (!avgGlucoseEl) return; 
+        
+        avgGlucoseEl.innerText = '--';
+        tirPercentEl.innerText = '--';
+        tarPercentEl.innerText = '--';
+        return;
+    }
+
+    const totalCount = list.length;
+    let totalGlucose = 0;
+    let tirCount = 0; // Time In Range (70-140)
+    let tarCount = 0; // Time Above Range (>140)
+    
+    list.forEach(r => {
+        totalGlucose += r.glucose;
+        if (r.glucose >= 70 && r.glucose <= 140) {
+            tirCount++;
+        } else if (r.glucose > 140) {
+            tarCount++;
+        }
+    });
+
+    const avg = (totalGlucose / totalCount).toFixed(1);
+    const tirPercent = ((tirCount / totalCount) * 100).toFixed(0);
+    const tarPercent = ((tarCount / totalCount) * 100).toFixed(0);
+    
+    // 設置結果
+    avgGlucoseEl.innerText = `${avg} mg/dL`;
+    tirPercentEl.innerText = `${tirPercent}%`;
+    tarPercentEl.innerText = `${tarPercent}%`;
+
+    // 根據 TIR 百分比給予顏色提示 (紅綠燈效果)
+    if (parseFloat(tirPercent) < 50) {
+        tirPercentEl.style.color = 'var(--high-color)'; // 紅色，表示 TIR 很差
+    } else if (parseFloat(tirPercent) < 70) {
+        tirPercentEl.style.color = '#ffc107'; // 黃色，表示中等
+    } else {
+        tirPercentEl.style.color = 'var(--normal-color)'; // 綠色，表示達標
+    }
+}
+
+// ======= 更新折線圖 (最新 15 筆 & 日期篩選) =======
 function updateChart(filteredList = null) {
     let dataToChart = [];
     let statusMessage = "";
@@ -151,15 +199,14 @@ function updateChart(filteredList = null) {
 
         if (records.length === 0) {
             statusMessage = "目前沒有血糖紀錄可供繪圖。";
-        } else if (records.length <= 15) { 
+        } else if (records.length <= 15) { 
             statusMessage = `目前顯示：所有 ${records.length} 筆紀錄。`;
         } else {
-            statusMessage = `目前顯示：最新 15 筆紀錄。`; 
+            statusMessage = `目前顯示：最新 15 筆紀錄。`; 
         }
     }
 
-
-    // 2. ⭐ 排序：無論數據來自哪裡，都必須按時間排序 ⭐
+    // 2. 排序：無論數據來自哪裡，都必須按時間排序
     let sortedData = [...dataToChart].sort(
         (a, b) => new Date(a.date + " " + a.time) - new Date(b.date + " " + b.time)
     );
@@ -169,22 +216,21 @@ function updateChart(filteredList = null) {
         sortedData = sortedData.slice(-15);
     }
 
+    // 4. 如果沒有資料，直接清空圖表
+    if (sortedData.length === 0) {
+        if (glucoseChart) glucoseChart.destroy();
+        glucoseChart = null; 
+        chartStatusEl.innerText = statusMessage;
+        return;
+    }
+    
+    // 5. 準備 Chart.js 資料
+    const labels = sortedData.map(r => `${r.date} ${r.time}`);
+    const data = sortedData.map(r => r.glucose);
+    chartStatusEl.innerText = statusMessage; // 更新提示訊息
 
-    // 4. 如果沒有資料，直接清空圖表
-    if (sortedData.length === 0) {
-        if (glucoseChart) glucoseChart.destroy();
-        glucoseChart = null; 
-        chartStatusEl.innerText = statusMessage;
-        return;
-    }
-    
-    // 5. 準備 Chart.js 資料
-    const labels = sortedData.map(r => `${r.date} ${r.time}`);
-    const data = sortedData.map(r => r.glucose);
-    chartStatusEl.innerText = statusMessage; // 更新提示訊息
-
-    // 每次先銷毀舊圖表，避免重疊
-    if (glucoseChart) glucoseChart.destroy();
+    // 每次先銷毀舊圖表，避免重疊
+    if (glucoseChart) glucoseChart.destroy();
 
     glucoseChart = new Chart(ctx, {
         type: "line",
@@ -193,7 +239,7 @@ function updateChart(filteredList = null) {
             datasets: [{
                 label: "血糖值 (mg/dL)",
                 data: data,
-                borderColor: "rgb(0, 123, 255)", 
+                borderColor: "rgb(0, 123, 255)", 
                 borderWidth: 2,
                 fill: false,
                 tension: 0.2,
@@ -220,8 +266,8 @@ function updateChart(filteredList = null) {
                         normalRange: {
                             type: 'box',
                             yMin: 70,       
-                            yMax: 140,      
-                            backgroundColor: 'rgba(40, 167, 69, 0.15)', 
+                            yMax: 140,      
+                            backgroundColor: 'rgba(40, 167, 69, 0.15)', 
                             borderColor: 'rgba(0, 0, 0, 0)',
                             borderWidth: 0,
                             drawTime: 'beforeDatasetsDraw',
@@ -249,7 +295,6 @@ function updateChart(filteredList = null) {
 applyChartFilterBtn.addEventListener('click', () => {
     const start = chartStartDate.value;
     const end = chartEndDate.value;
-    // 移除了：const category = chartCategoryFilter.value;
 
     if (!start || !end) {
         alert("請選擇開始和結束日期。");
@@ -261,18 +306,17 @@ applyChartFilterBtn.addEventListener('click', () => {
     
     if (filtered.length === 0) {
         alert("所選期間沒有資料。");
-        updateChart([]); 
+        updateChart([]); 
         return;
     }
 
-    updateChart(filtered); 
+    updateChart(filtered); 
 });
 
 // 重設按鈕事件處理
 resetChartFilterBtn.addEventListener('click', () => {
     chartStartDate.value = '';
     chartEndDate.value = '';
-    // 移除了：chartCategoryFilter.value = 'all';
     updateChart();
 });
 
@@ -284,7 +328,6 @@ form.addEventListener("submit", e => {
     const time = document.getElementById("time").value;
     const glucose = Number(document.getElementById("glucose").value);
     const medication = document.getElementById("medication").checked;
-    // 移除了：const category = document.getElementById("category").value;
 
     const newRecord = {
         id: Date.now(),
@@ -292,17 +335,17 @@ form.addEventListener("submit", e => {
         time,
         glucose,
         medication,
-        // 移除了：category
     };
 
     records.push(newRecord);
 
     localStorage.setItem("glucoseRecords", JSON.stringify(records));
 
-    currentPage = 1; 
-    // 使用 getFilteredRecords() 確保新增紀錄後列表顯示符合當前篩選條件的第一頁
-    displayRecords(getFilteredRecords()); 
+    currentPage = 1; 
+    // 確保新增紀錄後列表顯示符合當前篩選條件的第一頁
+    displayRecords(getFilteredRecords()); 
     updateChart();
+    updateSummaryStats(); // ⭐ 更新統計數據 ⭐
     form.reset();
 });
 
@@ -314,11 +357,12 @@ function deleteRecord(id) {
     
     displayRecords(getFilteredRecords());
     updateChart();
+    updateSummaryStats(); // ⭐ 更新統計數據 ⭐
 }
 
 
 filterSelect.addEventListener("change", () => {
-    currentPage = 1; 
+    currentPage = 1; 
     displayRecords(getFilteredRecords());
 });
 
@@ -387,3 +431,4 @@ async function getAIAdvice() {
 // 初始化畫面
 displayRecords();
 updateChart();
+updateSummaryStats();
