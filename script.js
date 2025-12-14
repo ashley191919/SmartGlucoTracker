@@ -182,7 +182,9 @@ async function getAIAdvice() {
     aiButton.innerText = "生成中..."; // 更改按鈕文字
 
     const recent = records.slice(-5);
-
+    const oldestDate = recent[0].date;
+    const newestDate = recent[recent.length - 1].date;
+    
     let recordText = recent.map(r =>
         `日期 ${r.date} 時間 ${r.time} 血糖 ${r.glucose} mg/dL，是否服藥：${r.medication ? "有" : "無"}`
     ).join("\n");
@@ -223,7 +225,10 @@ async function getAIAdvice() {
             // g 標記表示全域替換 (Global)
             rawText = rawText.replace(/\*\*/g, '').replace(/\*/g, '');
             
-            resultArea.innerText = rawText; // 顯示已淨化的文字
+            resultArea.innerHTML = `
+        <p><strong>AI 分析範圍：</strong> 最近 ${recent.length} 筆紀錄 (從 ${oldestDate} 到 ${newestDate})</p>
+        <p>${rawText}</p>
+        `;
         }
         
     } catch (error) {
