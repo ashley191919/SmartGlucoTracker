@@ -11,7 +11,10 @@ const chartEndDate = document.getElementById('chartEndDate');
 const applyChartFilterBtn = document.getElementById('applyChartFilter');
 const resetChartFilterBtn = document.getElementById('resetChartFilter');
 const chartStatusEl = document.getElementById('chartStatus');
-// 移除了：const chartCategoryFilter = document.getElementById('chartCategoryFilter');
+
+const avgGlucoseEl = document.getElementById('avgGlucose');
+const tirPercentEl = document.getElementById('tirPercent');
+const tarPercentEl = document.getElementById('tarPercent');
 
 let records = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
 let glucoseChart = null;
@@ -284,7 +287,6 @@ form.addEventListener("submit", e => {
     const time = document.getElementById("time").value;
     const glucose = Number(document.getElementById("glucose").value);
     const medication = document.getElementById("medication").checked;
-    // 移除了：const category = document.getElementById("category").value;
 
     const newRecord = {
         id: Date.now(),
@@ -292,7 +294,6 @@ form.addEventListener("submit", e => {
         time,
         glucose,
         medication,
-        // 移除了：category
     };
 
     records.push(newRecord);
@@ -303,6 +304,7 @@ form.addEventListener("submit", e => {
     // 使用 getFilteredRecords() 確保新增紀錄後列表顯示符合當前篩選條件的第一頁
     displayRecords(getFilteredRecords()); 
     updateChart();
+    updateSummaryStats();
     form.reset();
 });
 
@@ -314,6 +316,7 @@ function deleteRecord(id) {
     
     displayRecords(getFilteredRecords());
     updateChart();
+    updateSummaryStats();
 }
 
 
@@ -382,8 +385,52 @@ async function getAIAdvice() {
         aiButton.disabled = false; // 重新啟用按鈕
     }
 }
+function updateSummaryStats(list = records) {
+    if (list.length === 0) {
+        avgGlucoseEl.innerText = '--';
+        tirPercentEl.innerText = '--';
+        tarPercentEl.innerText = '--';
+        return;
+    }
 
+    const totalCount = list.length;
+    let totalGlucose = 0;
+    let tirCount = 0; // Time In Range (70-140)
+    let tarCount = 0; // Time Above Range (>140)
+    let tbrCount = 0; // Time Below Range (<70)
+
+    list.forEach(r => {
+        totalGlucose += r.glucose;
+        if (r.glucose >= 70 && r.glucose <= 140) {
+            tirCount++;
+        } else if (r.glucose > 140) {
+            tarCount++;
+        } else {
+            tbrCount++;
+        }
+    });
+
+    const avg = (totalGlucose / totalCount).toFixed(1);
+    const tirPercent = ((tirCount / totalCount) * 100).toFixed(0);
+    const tarPercent = ((tarCount / totalCount) * 100).toFixed(0);
+    const tbrPercent = ((tbrCount / totalCount) * 100).toFixed(0);
+    
+    // 設置結果
+    avgGlucoseEl.innerText = `${avg} mg/dL`;
+    tirPercentEl.innerText = `${tirPercent}%`;
+    tarPercentEl.innerText = `${tarPercent}%`;
+
+    // 根據 TIR 百分比給予顏色提示 (紅綠燈效果)
+    if (parseFloat(tirPercent) < 50) {
+        tirPercentEl.style.color = 'var(--high-color)'; // 紅色，表示 TIR 很差
+    } else if (parseFloat(tirPercent) < 70) {
+        tirPercentEl.style.color = '#ffc107'; // 黃色，表示中等
+    } else {
+        tirPercentEl.style.color = 'var(--normal-color)'; // 綠色，表示達標
+    }
+}
 
 // 初始化畫面
 displayRecords();
 updateChart();
+updateSummaryStats();
